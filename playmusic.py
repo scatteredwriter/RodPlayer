@@ -22,7 +22,7 @@ class Player(Publisher):
         Publisher.__init__(self)
         self.cur_music = None
         self.playList = []
-        self._cur_index = 0
+        self._cur_index = -1
         self._lock = threading.RLock()
         self._player_theard = None
         self.play_mode = PlayMode.NORMAL

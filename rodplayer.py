@@ -48,14 +48,24 @@ class Main(Listener):
         if self.player and len(self.player.playList) > 0:
             print('{}播放列表:{}'.format(Color.OKBLUE, Color.ENDC))
             for i in range(len(self.player.playList)):
-                print(
-                    '[{}].{}歌曲{}:{}\t{}歌手{}:{}\t{}专辑{}:{}'.format(Color.OKGREEN + str(i) + Color.ENDC,
-                                                                  Color.OKGREEN, Color.ENDC,
-                                                                  Color.BOLD + self.player.playList[i].songName + Color.ENDC,
-                                                                  Color.OKGREEN, Color.ENDC,
-                                                                  Color.BOLD + self.player.playList[i].singerName + Color.ENDC,
-                                                                  Color.OKGREEN, Color.ENDC,
-                                                                  Color.BOLD+self.player.playList[i].albumName + Color.ENDC))
+                if i == self.player._cur_index:
+                    #当前播放的歌曲
+                    print(
+                        '{}[{}].歌曲:{}\t歌手:{}\t专辑:{}{}'.format(Color.OKBLUE,
+                                                              str(i),
+                                                              self.player.playList[i].songName,
+                                                              self.player.playList[i].singerName,
+                                                              self.player.playList[i].albumName,
+                                                              Color.ENDC))
+                else:
+                    print(
+                        '[{}].{}歌曲{}:{}\t{}歌手{}:{}\t{}专辑{}:{}'.format(Color.OKGREEN + str(i) + Color.ENDC,
+                                                                      Color.OKGREEN, Color.ENDC,
+                                                                      Color.BOLD + self.player.playList[i].songName + Color.ENDC,
+                                                                      Color.OKGREEN, Color.ENDC,
+                                                                      Color.BOLD + self.player.playList[i].singerName + Color.ENDC,
+                                                                      Color.OKGREEN, Color.ENDC,
+                                                                      Color.BOLD+self.player.playList[i].albumName + Color.ENDC))
         else:
             print('{}播放列表为空{}'.format(Color.FAIL, Color.ENDC))
 
@@ -108,7 +118,7 @@ a/A:添加当前歌曲至播放列表\n\
                 if self.player:
                     self.player.executeCommand(playmusic.PlayerCommand.STOP)
                 exit()
-            elif command[0:1] == 'p' or command == 'P':
+            elif command[0:1] == 'p' or command[0:1] == 'P':
                 if self.player:
                     if len(command) == 1:
                         #暂停/播放
@@ -117,13 +127,13 @@ a/A:添加当前歌曲至播放列表\n\
                     else:
                         #播放列表中对应序号的歌曲
                         try:
-                            pattern = re.compile(r'[p|P]\s(\d+)')
+                            pattern = re.compile(r'(p|P)\s(\d+)')
                             result = re.search(pattern, command).groups()
-                            if len(result) != 1:
+                            if len(result) != 2:
                                 print("{}错误指令!{}".format(
                                     Color.FAIL, Color.ENDC))
                                 continue
-                            index = int(result[0])
+                            index = int(result[1])
                             self.player.playMusic(index)
                         except:
                             print("{}错误指令!{}".format(Color.FAIL, Color.ENDC))
