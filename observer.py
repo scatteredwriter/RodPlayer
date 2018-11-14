@@ -1,26 +1,24 @@
+from enum import IntEnum
+
+
 class Publisher:
     def __init__(self):
-        self._listeners = []
         self._eventDict = {}
 
     def _addListener(self, listener, eventName):
-        if self._listeners.count(listener) < 1:
-            self._listeners.append(listener)
-        if eventName not in self._eventDict:
-            self._eventDict[eventName] = []
-        self._eventDict[eventName].append(listener)
+        eventKey = eventName
+        if eventKey not in self._eventDict:
+            self._eventDict[eventKey] = []
+        self._eventDict[eventKey].append(listener)
 
-    def _removeListener(self, listener, event):
-        self._listeners.remove(listener)
-        for eventKey in self._eventDict:
-            for _listener in eventKey:
-                if _listener == listener:
-                    eventKey.pop(listener)
+    def _removeListener(self, listener, eventName):
+        eventKey = eventName
+        if eventKey in self._eventDict:
+            if self._eventDict[eventKey].count(listener) > 0:
+                self._eventDict[eventKey].remove(listener)
 
     def notify(self, eventName, eventContent):
         if eventName not in self._eventDict:
-            return
-        if not self._listeners or len(self._listeners) <= 0:
             return
         event = Event(eventName, eventContent)
         for listener in self._eventDict[eventName]:
@@ -49,3 +47,8 @@ class Event:
     def __init__(self, eventName, eventContent):
         self.eventName = eventName
         self.eventContent = eventContent
+
+
+class eventName(IntEnum):
+    MusicCompletation = 1,
+    musicDeleted = 2

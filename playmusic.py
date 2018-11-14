@@ -1,5 +1,5 @@
 from enum import Enum, IntEnum
-from observer import Publisher, Event
+from observer import Publisher, Event, eventName
 import subprocess
 import threading
 
@@ -36,13 +36,25 @@ class Player(Publisher):
             self.playList.remove(music)
         self.playList.append(music)
 
-    def deleteMusic(self, index):
+    def deleteMusic(self, indexs):
         '''删除播放列表中的歌曲'''
-        if self.playList and len(self.playList) > index:
-            self.playList.remove(self.playList[index])
-            if self.cur_music:
-                #调整当前播放歌曲的位置
-                self._cur_index = self.playList.index(self.cur_music)
+        if not indexs or len(indexs) <= 0:
+            return
+        musics = []
+        for index in indexs:
+            if self.playList and len(self.playList) > index:
+                musics.append(self.playList[index])
+        if not musics or len(musics) <= 0:
+            return
+        for music in musics:
+            _music_singername = music.singerName
+            _music_songname = music.songName
+            self.playList.remove(music)
+            self.notify(
+                eventName.musicDeleted, (_music_singername, _music_songname))
+        if self.cur_music:
+            #调整当前播放歌曲的位置
+            self._cur_index = self.playList.index(self.cur_music)
 
     def clearPlayList(self):
         '''清除播放列表'''
@@ -170,7 +182,7 @@ class Player(Publisher):
                     #播放结束
                     if len(self.playList) > 0:
                         self._playNext()
-                        self.notify('MusicCompletation', '')
+                        self.notify(eventName.MusicCompletation, '')
                         continue
                     if len(self.playList) == 0:
                         self._stop()
