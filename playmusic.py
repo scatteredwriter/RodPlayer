@@ -5,14 +5,14 @@ import threading
 
 
 class PlayMode(IntEnum):
-    NORMAL = 1,
-    REVERSE = 2,
+    NORMAL = 1
+    REVERSE = 2
 
 
 class PlayerCommand(Enum):
-    NEXT = 1,
-    PREVIOUS = 2,
-    PAUSE = 3,
+    NEXT = 1
+    PREVIOUS = 2
+    PAUSE = 3
     STOP = 4
 
 
@@ -34,7 +34,11 @@ class Player(Publisher):
         '''添加歌曲至播放列表'''
         if self.playList.count(music) > 0:
             self.playList.remove(music)
+        _music_singername = music.singerName
+        _music_songname = music.songName
         self.playList.append(music)
+        self.notify(
+            eventName.MusicAdded, (_music_singername, _music_songname))
 
     def deleteMusic(self, indexs):
         '''删除播放列表中的歌曲'''
@@ -51,7 +55,7 @@ class Player(Publisher):
             _music_songname = music.songName
             self.playList.remove(music)
             self.notify(
-                eventName.musicDeleted, (_music_singername, _music_songname))
+                eventName.MusicDeleted, (_music_singername, _music_songname))
         if self.cur_music:
             #调整当前播放歌曲的位置
             self._cur_index = self.playList.index(self.cur_music)

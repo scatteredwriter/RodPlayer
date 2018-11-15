@@ -50,5 +50,8 @@ class Event:
 
 
 class eventName(IntEnum):
-    MusicCompletation = 1,
-    musicDeleted = 2
+    MusicCompletation = 1
+    MusicAdded = 2
+    MusicDeleted = 3
+    CursesKeyUp = 4
+    CursesKeyDown = 5
