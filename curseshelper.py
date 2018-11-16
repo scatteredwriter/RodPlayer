@@ -88,14 +88,21 @@ class CursesHelper():
     #                         arr_str[i].encode('utf-8'), _Attr[attrs[i - 1]])
     #     self.stdscr.refresh()
 
-    def printStr(self, strs, attrs=None, clear=False, newLine=True, needPressKey=False, y=-1, x=-1):
+    def printStr(self, strs, attrs=None, clear=False, newLine=True, needPressKey=False, curLine=False, y=-1, x=-1):
         if attrs is None and y == -1 and x == -1:
             if clear:
                 self.stdscr.clear()
-            self.stdscr.addstr(strs.encode('utf-8'))
+            y = self.stdscr.getyx()[0]
+            if curLine:
+                x = 0
+            else:
+                x = self.stdscr.getyx()[1]
+            self.stdscr.addstr(y, x, strs.encode('utf-8'))
         elif attrs is None and y != -1 and x != -1:
             if clear:
                 self.stdscr.clear()
+            if curLine:
+                y = self.stdscr.getyx()[0]
             self.stdscr.addstr(y, x, strs.encode('utf-8'))
         elif attrs is not None and len(attrs) > 0 and y == -1 and x == -1:
             arr_str = strs.split(_splitStr)
@@ -105,9 +112,14 @@ class CursesHelper():
                 return
             if clear:
                 self.stdscr.clear()
+            y = self.stdscr.getyx()[0]
+            if curLine:
+                x = 0
+            else:
+                x = self.stdscr.getyx()[1]
             for i in range(len(arr_str)):
                 if i == 0:
-                    self.stdscr.addstr(arr_str[i].encode('utf-8'))
+                    self.stdscr.addstr(y, x, arr_str[i].encode('utf-8'))
                 else:
                     if attrs[i - 1] > 0:
                         self.stdscr.addstr(
@@ -123,6 +135,8 @@ class CursesHelper():
                 return
             if clear:
                 self.stdscr.clear()
+            if curLine:
+                y = self.stdscr.getyx()[0]
             for i in range(len(arr_str)):
                 if i == 0:
                     self.stdscr.addstr(y, x, arr_str[i].encode('utf-8'))

@@ -14,6 +14,7 @@ class PlayerCommand(Enum):
     PREVIOUS = 2
     PAUSE = 3
     STOP = 4
+    QUIT = 5
 
 
 class Player(Publisher):
@@ -64,21 +65,24 @@ class Player(Publisher):
         '''清除播放列表'''
         if len(self.playList) > 0:
             self.playList.clear()
+            self._stop()
 
     def executeCommand(self, command):
         '''执行播放指令'''
         if command == PlayerCommand.NEXT:
-            self._next()
+            self._playNext()
         elif command == PlayerCommand.PREVIOUS:
-            self._previous()
+            self._playPrevious()
         elif command == PlayerCommand.PAUSE:
             self._pause()
         elif command == PlayerCommand.STOP:
             self._stop()
+        elif command ==PlayerCommand.QUIT:
+            self._quit()
 
     def changePlayMode(self):
         '''更换播放模式'''
-        value = self.play_mode.value
+        value = self.play_mode
         if value == PlayMode.REVERSE:
             self.play_mode = PlayMode.NORMAL
             return
@@ -99,11 +103,19 @@ class Player(Publisher):
     def _stop(self):
         '''停止播放'''
         if self._mpg123Process:
+            self._mpg123Process.stdin.write('S\n'.encode('utf-8'))
+            self._mpg123Process.stdin.flush()
+        self._cur_index = -1
+        self.cur_music = None
+
+    def _quit(self):
+        '''停止播放'''
+        if self._mpg123Process:
             self._mpg123Process.stdin.write('Q\n'.encode('utf-8'))
             self._mpg123Process.stdin.flush()
             self._mpg123Process.terminate()
             self._mpg123Process = None
-        self._cur_index = 0
+        self._cur_index = -1
         self.cur_music = None
 
     def _next(self):
@@ -153,6 +165,13 @@ class Player(Publisher):
         elif self.play_mode == PlayMode.REVERSE:
             return self._previous()
 
+    def _playPrevious(self):
+        '''播放当前歌曲结束后的下一首'''
+        if self.play_mode == PlayMode.NORMAL:
+            return self._previous()
+        elif self.play_mode == PlayMode.REVERSE:
+            return self._next()
+
     def _setCurrentIndex(self, index):
         '''指定当前播放的歌曲并且播放该歌曲'''
         self._lock.acquire()
@@ -179,12 +198,14 @@ class Player(Publisher):
                     continue
                 elif stdout[:2] == '@E':
                     #错误
-                    self._mpg123Process.stdin.write('Q\n'.encode('utf-8'))
-                    self._mpg123Process.stdin.flush()
-                    break
+                    self.notify(eventName.PlayError, (
+                        self.cur_music.singerName, self.cur_music.songName))
+                    self.playMusic(self.cur_music)
+                    continue
                 elif stdout == '@P 0':
                     #播放结束
                     if len(self.playList) > 0:
+                        #播放下一首
                         self._playNext()
                         self.notify(eventName.MusicCompletation, '')
                         continue

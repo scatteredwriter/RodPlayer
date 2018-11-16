@@ -56,11 +56,23 @@ class Main(Listener):
         self.addObserver(self.player, eventName.MusicCompletation)
         self.addObserver(self.player, eventName.MusicAdded)
         self.addObserver(self.player, eventName.MusicDeleted)
+        self.addObserver(self.player, eventName.PlayError)
         self.stdscr = curses.initscr()
         self.cursesHelper = CursesHelper(self.stdscr)
         curses.noecho()
         curses.cbreak()
         self.stdscr.keypad(True)
+
+    def _dealloc(self):
+        if self.player:
+            self.player.executeCommand(playmusic.PlayerCommand.STOP)
+            self.removeObserver(self.player, eventName.MusicCompletation)
+            self.removeObserver(self.player, eventName.MusicAdded)
+            self.removeObserver(self.player, eventName.MusicDeleted)
+            self.removeObserver(self.player, eventName.PlayError)
+        if self.cursesHelper:
+            self.cursesHelper.dealloc()
+        exit()
 
     def onNotify(self, event):
         if not isinstance(event, Event):
@@ -77,6 +89,9 @@ class Main(Listener):
                 return
             self._printDeletedMusic(
                 event.eventContent[0], event.eventContent[1])
+        elif event.eventName == eventName.PlayError:
+            if not isinstance(event.eventContent, tuple):
+                return
 
     def _addAll(self, musics):
         if not musics or len(musics) == 0:
@@ -101,6 +116,10 @@ class Main(Listener):
             return
         self.cursesHelper.printStr(
             '/f/添加完成!', [CursesColor.blue], needPressKey=True)
+
+    def _printPlayError(self, singerName, songName):
+        self.cursesHelper.printStr('/f/播放 {} - {} 遇到错误,正在重试...'.format(
+            singerName, songName), [CursesColor.red])
 
     def _printAddedMusic(self, singerName, songName):
         self.cursesHelper.printStr('/f/已添加 /f/{} - {} /f/至播放列表'.format(
@@ -148,7 +167,7 @@ class Main(Listener):
                 begin += pageLens
                 self._printHelp(_helpKey.playList, needPressKey=False)
                 command = self.cursesHelper.printStr(
-                    '请输入命令:', needPressKey=True)
+                    '请输入命令:', needPressKey=True, newLine=False)
                 if command == 'q' or command == 'Q':
                     #退出
                     return
@@ -156,13 +175,12 @@ class Main(Listener):
                     #删除播放列表中对应序号的歌曲
                     self.cursesHelper.printStr(
                         '请输入要删除的/f/歌曲序号/f/(用/f/空格/f/分割序号进行多选):',
-                        (CursesColor.yellow, CursesColor.normal, CursesColor.yellow, CursesColor.normal))
+                        (CursesColor.yellow, CursesColor.normal, CursesColor.yellow, CursesColor.normal), newLine=False, curLine=True)
                     command = self.cursesHelper.getStr()
                     try:
                         pattern = re.compile(r'\d+')
                         result = re.findall(pattern, command)
                         if len(result) <= 0:
-                            self._printErrorCommand()
                             continue
                         indexs = []
                         for index in result:
@@ -172,24 +190,21 @@ class Main(Listener):
                         self.cursesHelper.getCh()
                         continue
                     except:
-                        self._printErrorCommand()
                         continue
                 elif command == 'p' or command == 'P':
                     #播放播放列表中对应序号的歌曲
                     self.cursesHelper.printStr(
-                        '请输入要播放的/f/歌曲序号:', [CursesColor.yellow])
+                        '请输入要播放的/f/歌曲序号:', [CursesColor.yellow], newLine=False, curLine=True)
                     command = self.cursesHelper.getStr()
                     try:
                         pattern = re.compile(r'(\d+)')
                         result = re.search(pattern, command).groups()
                         if len(result) != 1:
-                            self._printErrorCommand()
                             continue
                         index = int(result[0])
                         self.player.playMusic(index)
                         return
                     except:
-                        self._printErrorCommand()
                         continue
                 elif command == 'c' or command == 'C':
                     #清除播放列表
@@ -207,7 +222,6 @@ class Main(Listener):
                     p += 1
                     continue
                 else:
-                    self._printErrorCommand()
                     continue
         else:
             self.cursesHelper.printStr(
@@ -231,7 +245,7 @@ class Main(Listener):
                                                                                                    CursesColor.normal,
                                                                                                    CursesColor.blue))
         self.cursesHelper.printStr('请输入命令(/f/h/H/f/查看帮助):', (
-            CursesColor.yellow, CursesColor.normal))
+            CursesColor.yellow, CursesColor.normal), newLine=False)
 
     def _printDeletedMusic(self, singerName, songName):
         self.cursesHelper.printStr(
@@ -242,14 +256,14 @@ class Main(Listener):
             self.cursesHelper.clearSrc()
         if selectedTitle:
             self.cursesHelper.printStr(
-                '/f/指令帮助:{}'.format(selectedTitle.value), [CursesColor.blue])
+                '/f/指令帮助:{}'.format(selectedTitle.value), [CursesAttr.bold])
             for (key, value) in _helpDict[selectedTitle].items():
                 self.cursesHelper.printStr(
                     '/f/{}/f/:\t/f/{}'.format(key, value), (CursesColor.blue, CursesColor.normal, CursesColor.green))
         else:
             for (mainTitle, mainValue) in _helpDict.items():
                 self.cursesHelper.printStr(
-                    '/f/{}:'.format(mainTitle.value), [CursesColor.blue])
+                    '/f/{}:'.format(mainTitle.value), [CursesAttr.bold])
                 for (key, value) in mainValue.items():
                     self.cursesHelper.printStr(
                         '/f/{}/f/:\t/f/{}'.format(key, value), (CursesColor.blue, CursesColor.normal, CursesColor.green))
@@ -273,7 +287,7 @@ class Main(Listener):
         begin = 0
         nextPage = True
         self.cursesHelper.printStr('请输入搜索关键字(/f/q或Q/f/取消):', (
-            CursesColor.yellow, CursesColor.normal), True)
+            CursesColor.yellow, CursesColor.normal), clear=True, newLine=False)
         command = self.cursesHelper.getStr()
         if command == 'q' or command == 'Q':
             return
@@ -326,19 +340,18 @@ class Main(Listener):
                     return
                 continue
             self._printHelp(_helpKey.musicSearchResult, needPressKey=False)
-            command = self.cursesHelper.printStr('请输入命令:', needPressKey=True)
+            command = self.cursesHelper.printStr(
+                '请输入命令:', needPressKey=True, newLine=False)
             if command == 'q' or command == 'Q':
                 #退出
                 return
             elif command == 'a' or command == 'A':
                 #添加当前所有歌曲至播放列表
                 self._addAll(musicDict[p])
-                # nextPage = False
                 continue
             elif command == 'KEY_UP':
                 #上一页
                 if p > 1:
-                    # nextPage = False
                     begin -= len(musicDict[p])
                     p -= 1
                 continue
@@ -351,7 +364,7 @@ class Main(Listener):
                 #查看歌曲详情
                 self.cursesHelper.printStr(
                     '请输入要查看的/f/歌曲序号/f/(用/f/空格/f/分割序号进行多选):',
-                    (CursesColor.yellow, CursesColor.normal, CursesColor.yellow, CursesColor.normal))
+                    (CursesColor.yellow, CursesColor.normal, CursesColor.yellow, CursesColor.normal), newLine=False, curLine=True)
                 command = self.cursesHelper.getStr()
                 pattern = re.compile(r'\d+')
                 musicIndexs = re.findall(pattern, command)
@@ -360,7 +373,6 @@ class Main(Listener):
                     return
                 else:
                     self._musicsDetail(musicIndexs, musicDict[p], begin)
-                    # nextPage = False
                     continue
 
     def _musicsDetail(self, musicIndexs, musics, begin):
@@ -369,7 +381,7 @@ class Main(Listener):
             self._printErrorCommand()
             return
         for selectIndex in musicIndexs:
-            self.cursesHelper.clearSrc()
+            self.cursesHelper.clearSrc()  # 清屏
             selectIndex = int(selectIndex) - begin
             if selectIndex < 0 or selectIndex >= len(musics):
                 self._printErrorCommand('/f/歌曲编号{}已超出当前页歌曲列表范围!'.format(
@@ -393,7 +405,8 @@ class Main(Listener):
                                                                                                      CursesAttr.normal,
                                                                                                      CursesAttr.underline))
             self._printHelp(_helpKey.musicDetail, needPressKey=False)
-            command = self.cursesHelper.printStr('请输入命令:', needPressKey=True)
+            command = self.cursesHelper.printStr(
+                '请输入命令:', needPressKey=True, newLine=False)
             if command == 'q' or command == 'Q':
                 #退出查看当前歌曲详情
                 continue
@@ -403,7 +416,7 @@ class Main(Listener):
                 continue
             elif command == 'd' or command == 'D':
                 #下载
-                self.cursesHelper.printStr('开始下载 /f/{} - {}/f/ ...'.format(music.singerName, music.songName + '.mp3'), (CursesColor.green, CursesColor.normal))
+                self.cursesHelper.printStr('开始下载 /f/{} - {}/f/ ...'.format(music.singerName, music.songName + '.mp3'), (CursesColor.green, CursesColor.normal), clear=True)
                 isSucc = download.downloadFile(music)
                 if not isSucc:
                     self.cursesHelper.printStr('/f/下载失败，正在重试.../f/', (
@@ -435,14 +448,7 @@ class Main(Listener):
             command = self.cursesHelper.getKey()
             if command == 'q' or command == 'Q':
                 #退出
-                if self.player:
-                    self.player.executeCommand(playmusic.PlayerCommand.STOP)
-                    self.addObserver(self.player, eventName.MusicCompletation)
-                    self.addObserver(self.player, eventName.MusicAdded)
-                    self.addObserver(self.player, eventName.MusicDeleted)
-                if self.cursesHelper:
-                    self.cursesHelper.dealloc()
-                exit()
+                self._dealloc()
             elif command == 'p' or command == 'P':
                 if self.player:
                 #暂停/播放
