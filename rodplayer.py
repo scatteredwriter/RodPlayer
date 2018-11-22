@@ -119,7 +119,7 @@ class Main(Listener):
             '/f/添加完成!', [CursesColor.blue], needPressKey=True)
 
     def _printPlayError(self, singerName, songName):
-        self.cursesHelper.printStr('/f/播放 {} - {} 遇到错误,正在第{}次重试...'.format(
+        self.cursesHelper.printStr('/f/播放 {} - {} 遇到错误,正在重试...'.format(
             singerName, songName), [CursesColor.red], clear=True)
         # self._printPlayerStatus(False)
 
