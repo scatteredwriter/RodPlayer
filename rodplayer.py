@@ -65,7 +65,7 @@ class Main(Listener):
 
     def _dealloc(self):
         if self.player:
-            self.player.executeCommand(playmusic.PlayerCommand.STOP)
+            self.player.executeCommand(playmusic.PlayerCommand.QUIT)
             self.removeObserver(self.player, eventName.MusicCompletation)
             self.removeObserver(self.player, eventName.MusicAdded)
             self.removeObserver(self.player, eventName.MusicDeleted)
@@ -80,18 +80,19 @@ class Main(Listener):
         if event.eventName == eventName.MusicCompletation:
             self._printPlayerStatus()
         elif event.eventName == eventName.MusicAdded:
-            if not isinstance(event.eventContent, tuple):
+            if not isinstance(event.eventContent, tuple) or len(event.eventContent) != 2:
                 return
             self._printAddedMusic(
                 event.eventContent[0], event.eventContent[1])
         elif event.eventName == eventName.MusicDeleted:
-            if not isinstance(event.eventContent, tuple):
+            if not isinstance(event.eventContent, tuple) or len(event.eventContent) != 2:
                 return
             self._printDeletedMusic(
                 event.eventContent[0], event.eventContent[1])
         elif event.eventName == eventName.PlayError:
-            if not isinstance(event.eventContent, tuple):
+            if not isinstance(event.eventContent, tuple) or len(event.eventContent) != 2:
                 return
+            self._printPlayError(event.eventContent[0], event.eventContent[1])
 
     def _addAll(self, musics):
         if not musics or len(musics) == 0:
@@ -118,8 +119,9 @@ class Main(Listener):
             '/f/添加完成!', [CursesColor.blue], needPressKey=True)
 
     def _printPlayError(self, singerName, songName):
-        self.cursesHelper.printStr('/f/播放 {} - {} 遇到错误,正在重试...'.format(
-            singerName, songName), [CursesColor.red])
+        self.cursesHelper.printStr('/f/播放 {} - {} 遇到错误,正在第{}次重试...'.format(
+            singerName, songName), [CursesColor.red], clear=True)
+        # self._printPlayerStatus(False)
 
     def _printAddedMusic(self, singerName, songName):
         self.cursesHelper.printStr('/f/已添加 /f/{} - {} /f/至播放列表'.format(
@@ -231,8 +233,9 @@ class Main(Listener):
         if self.player:
             self.player.clearPlayList()
 
-    def _printPlayerStatus(self):
-        self.cursesHelper.clearSrc()
+    def _printPlayerStatus(self, clear=True):
+        if clear:
+            self.cursesHelper.clearSrc()
         if self.player and self.player.cur_music:
             play_mode = ''
             if self.player.play_mode == playmusic.PlayMode.NORMAL:

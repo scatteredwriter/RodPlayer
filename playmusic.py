@@ -24,6 +24,7 @@ class Player(Publisher):
         self.cur_music = None
         self.playList = []
         self._cur_index = -1
+        self._retryCount = 0
         self._lock = threading.RLock()
         self._player_theard = None
         self.play_mode = PlayMode.NORMAL
@@ -77,7 +78,7 @@ class Player(Publisher):
             self._pause()
         elif command == PlayerCommand.STOP:
             self._stop()
-        elif command ==PlayerCommand.QUIT:
+        elif command == PlayerCommand.QUIT:
             self._quit()
 
     def changePlayMode(self):
@@ -198,9 +199,18 @@ class Player(Publisher):
                     continue
                 elif stdout[:2] == '@E':
                     #错误
+                    # if self._retryCount >= 0 and self._retryCount < 3:
+                    #     self.notify(eventName.PlayError, (
+                    #         self.cur_music.singerName, self.cur_music.songName, self._retryCount + 1))
+                    #     self.playMusic(self._cur_index)
+                    #     self._retryCount += 1
+                    # else:
+                    #     self._playNext()
+                    #     self._retryCount = 0
                     self.notify(eventName.PlayError, (
                         self.cur_music.singerName, self.cur_music.songName))
-                    self.playMusic(self.cur_music)
+                    self.deleteMusic(self._cur_index)
+                    self._playNext()
                     continue
                 elif stdout == '@P 0':
                     #播放结束
