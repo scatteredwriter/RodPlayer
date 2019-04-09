@@ -16,8 +16,8 @@ class Music:
     def getMusicInfo(self, fileType=None):
         """获取歌曲信息"""
         typeList = [
-            'M800',
             'M500',
+            'M800',
         ]
         if fileType is None:
             fileType = typeList[0]
